@@ -6,10 +6,10 @@ export type PlayerDocument = HydratedDocument<Player>;
 @Schema()
 export class Player {
 
-    @Prop({ required: true })
+    @Prop({ required: true, unique: true })
     id: string;
 
-    @Prop({ required: true })
+    @Prop({ required: true, unique: true })
     name: string;
 
     @Prop({ required: true })

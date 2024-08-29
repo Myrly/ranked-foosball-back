@@ -19,16 +19,16 @@ export class PlayerController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.playerService.findOne(+id);
+    return this.playerService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updatePlayerDto: UpdatePlayerDto) {
-    return this.playerService.update(+id, updatePlayerDto);
+    return this.playerService.update(id, updatePlayerDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.playerService.remove(+id);
+    return this.playerService.remove(id);
   }
 }
