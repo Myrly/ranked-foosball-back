@@ -1,8 +1,9 @@
-export class UpdatePlayerDto {
+export class FinishGameDto {
 
     constructor(
         public id: string,
-        public name: string,
+        public firstTeamScore: number,
+        public secondTeamScore: number,
     ) {
     }
 

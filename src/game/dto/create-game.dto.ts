@@ -1,9 +1,9 @@
 export class CreateGameDto {
 
-    constructor(
-        public id: number,
-        public name: string,
-    ) {
-    }
+  constructor(
+    public firstTeam: string[],
+    public secondTeam: string[],
+  ) {
+  }
 
 }

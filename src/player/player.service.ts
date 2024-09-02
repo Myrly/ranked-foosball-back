@@ -21,19 +21,21 @@ export class PlayerService {
     const DEFAULT_ELO: number = 1000;
     const DEFAULT_WINS_AMOUNT: number = 0;
     const DEFAULT_GAMES_AMOUNT: number = 0;
+    const DEFAULT_WLR: number = 0;
     let player: PlayerEntity = new PlayerEntity(
       createPlayerDto.id,
       createPlayerDto.name,
       DEFAULT_ELO,
       DEFAULT_WINS_AMOUNT,
       DEFAULT_GAMES_AMOUNT,
+      DEFAULT_WLR,
     );
     const createdPlayer = new this.playerModel(player);
     return createdPlayer.save();
   }
 
-  async findAll(): Promise<Player[]> {
-    return this.playerModel.find().select('-id').exec();
+  async findAll(sortField: string): Promise<Player[]> {
+    return this.playerModel.find().select('-id').sort(sortField).exec();
   }
 
   async findOne(id: string) {

@@ -13,8 +13,13 @@ export class PlayerController {
   }
 
   @Get()
-  findAll() {
-    return this.playerService.findAll();
+  findAllNoSortField() {
+    return this.playerService.findAll('elo');
+  }
+
+  @Get(':sortField')
+  findAll(@Param('sortField') sortField: string) {
+    return this.playerService.findAll(sortField);
   }
 
   @Get(':id')

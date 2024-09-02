@@ -20,6 +20,10 @@ export class Player {
 
     @Prop({ required: true })
     games: number;
+
+    @Prop({ required: true })
+    wlr: number;
+
 }
 
 export const PlayerSchema = SchemaFactory.createForClass(Player);
