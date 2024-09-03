@@ -4,7 +4,8 @@ export class PlayerEntity {
         public name: string,
         public elo: number,
         public wins: number,
-        public games: number
+        public games: number,
+        public wlr: number,
     ) {
     }
 }
