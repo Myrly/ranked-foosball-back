@@ -48,41 +48,42 @@ export class GameService {
   async endGame(id: string, finishGameDto: FinishGameDto) {
 
     if (finishGameDto.isCancelled) {
-      return this.gameModel.deleteOne({ id: id }).exec();
+      return await this.gameModel.deleteOne({ id: id }).exec();
+    } else {
+
+      const game = await this.gameModel.findOne({id: id}).exec();
+      if (!game) {
+        throw new NotFoundException('This game is already finished or has never existed.');
+      }
+
+      const fetchPlayer = async (playerId: string) => {
+        return this.playerModel.findOne({_id: playerId}).exec();
+      };
+
+      const [
+        firstTeamFirstPlayer,
+        firstTeamSecondPlayer,
+        secondTeamFirstPlayer,
+        secondTeamSecondPlayer
+      ] = await Promise.all([
+        fetchPlayer(game.firstTeam[0]),
+        fetchPlayer(game.firstTeam[1]),
+        fetchPlayer(game.secondTeam[0]),
+        fetchPlayer(game.secondTeam[1]),
+      ]);
+
+      const firstTeamAverageElo = (firstTeamFirstPlayer.elo + firstTeamSecondPlayer.elo) / 2;
+      const secondTeamAverageElo = (secondTeamFirstPlayer.elo + secondTeamSecondPlayer.elo) / 2;
+
+      await Promise.all([
+        this.updatePlayerStats(firstTeamFirstPlayer, finishGameDto.firstTeamScore, secondTeamAverageElo, firstTeamAverageElo),
+        this.updatePlayerStats(firstTeamSecondPlayer, finishGameDto.firstTeamScore, secondTeamAverageElo, firstTeamAverageElo),
+        this.updatePlayerStats(secondTeamFirstPlayer, finishGameDto.secondTeamScore, firstTeamAverageElo, secondTeamAverageElo),
+        this.updatePlayerStats(secondTeamSecondPlayer, finishGameDto.secondTeamScore, firstTeamAverageElo, secondTeamAverageElo),
+      ]);
+
+      return this.gameModel.deleteOne({id: id}).exec();
     }
-
-    const game = await this.gameModel.findOne({ id: id }).exec();
-    if (!game) {
-      throw new NotFoundException('This game is already finished or has never existed.');
-    }
-
-    const fetchPlayer = async (playerId: string) => {
-      return this.playerModel.findOne({ _id: playerId }).exec();
-    };
-
-    const [
-      firstTeamFirstPlayer,
-      firstTeamSecondPlayer,
-      secondTeamFirstPlayer,
-      secondTeamSecondPlayer
-    ] = await Promise.all([
-      fetchPlayer(game.firstTeam[0]),
-      fetchPlayer(game.firstTeam[1]),
-      fetchPlayer(game.secondTeam[0]),
-      fetchPlayer(game.secondTeam[1]),
-    ]);
-
-    const firstTeamAverageElo = (firstTeamFirstPlayer.elo + firstTeamSecondPlayer.elo) / 2;
-    const secondTeamAverageElo = (secondTeamFirstPlayer.elo + secondTeamSecondPlayer.elo) / 2;
-
-    await Promise.all([
-      this.updatePlayerStats(firstTeamFirstPlayer, finishGameDto.firstTeamScore, secondTeamAverageElo, firstTeamAverageElo),
-      this.updatePlayerStats(firstTeamSecondPlayer, finishGameDto.firstTeamScore, secondTeamAverageElo, firstTeamAverageElo),
-      this.updatePlayerStats(secondTeamFirstPlayer, finishGameDto.secondTeamScore, firstTeamAverageElo, secondTeamAverageElo),
-      this.updatePlayerStats(secondTeamSecondPlayer, finishGameDto.secondTeamScore, firstTeamAverageElo, secondTeamAverageElo),
-    ]);
-
-    return this.gameModel.deleteOne({ id: id }).exec();
   }
 
   calculatePlayerNewElo(playerElo: number, teamAverageElo: number, didWin: boolean, opponentAverageElo: number, score: number) {
