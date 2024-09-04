@@ -46,6 +46,11 @@ export class GameService {
   }
 
   async endGame(id: string, finishGameDto: FinishGameDto) {
+
+    if (finishGameDto.isCancelled) {
+      return this.gameModel.deleteOne({ id: id }).exec();
+    }
+
     const game = await this.gameModel.findOne({ id: id }).exec();
     if (!game) {
       throw new NotFoundException('This game is already finished or has never existed.');
