@@ -13,6 +13,11 @@ export class GameService {
 
   constructor(@InjectModel(Game.name) private gameModel: Model<Game>, @InjectModel(Player.name) private playerModel: Model<Player>) {
   }
+
+  get(id: string) {
+    return this.gameModel.findOne({ id: id }).exec();
+  }
+
   create() {
     let game: CreateGameDto = new CreateGameDto([], []);
     const createdGame = new this.gameModel(game);
@@ -22,7 +27,7 @@ export class GameService {
   async addPlayer(id: string, addPlayerGameDto: AddPlayerGameDto) {
     let game = await this.gameModel.findOne({ id: id }).exec();
     if (!game) {
-      throw new NotFoundException('A game with this ID doesn\'t exist.')
+      throw new GoneException('A game with this ID doesn\'t exist.')
     }
     let player = await this.playerModel.findOne({ id: addPlayerGameDto.playerId }).exec();
     if (!player) {
@@ -34,7 +39,8 @@ export class GameService {
     addPlayerGameDto.isFirstTeam
       ? game.firstTeam.push(player._id.toString())
       : game.secondTeam.push(player._id.toString());
-    return game.save();
+    await game.save();
+    return player._id;
   }
 
   private updatePlayerStats(player: any, teamScore: number, opponentAverageElo: number, teamAverageElo: number) {
