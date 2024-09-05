@@ -17,12 +17,17 @@ export class PlayerController {
     return this.playerService.findAll('elo');
   }
 
-  @Get(':sortField')
+  @Get('many/:sortField')
   findAll(@Param('sortField') sortField: string) {
     return this.playerService.findAll(sortField);
   }
 
-  @Get(':id')
+  @Get('one/safe/:id')
+  findOneSafe(@Param('id') id: string) {
+    return this.playerService.findOneSafe(id);
+  }
+
+  @Get('one/unsafe/:id')
   findOne(@Param('id') id: string) {
     return this.playerService.findOne(id);
   }

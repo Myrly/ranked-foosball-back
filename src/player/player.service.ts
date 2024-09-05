@@ -38,8 +38,12 @@ export class PlayerService {
     return this.playerModel.find().select('-id').sort(sortField).exec();
   }
 
-  async findOne(id: string) {
+  async findOneSafe(id: string) {
     return this.playerModel.findOne({ id: id }).select('-id').exec();
+  }
+
+  async findOne(id: string) {
+    return this.playerModel.findOne({ _id: id }).select('-id').exec();
   }
 
   async update(id: string, updatePlayerDto: UpdatePlayerDto) {
