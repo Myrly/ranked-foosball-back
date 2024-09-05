@@ -7,6 +7,11 @@ import {AddPlayerGameDto} from "./dto/add-player.dto";
 export class GameController {
   constructor(private readonly gameService: GameService) {}
 
+  @Get(':id')
+  get(@Param('id') id: string) {
+    return this.gameService.get(id);
+  }
+
   @Post()
   create() {
     return this.gameService.create();
