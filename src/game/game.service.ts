@@ -1,4 +1,4 @@
-import {ConflictException, GoneException, Injectable, NotFoundException} from '@nestjs/common';
+import {ConflictException, GoneException, Injectable, NotAcceptableException, NotFoundException} from '@nestjs/common';
 import { FinishGameDto } from './dto/finish-game.dto';
 import {AddPlayerGameDto} from "./dto/add-player.dto";
 import {InjectModel} from "@nestjs/mongoose";
@@ -48,38 +48,34 @@ export class GameService {
   async endGame(id: string, finishGameDto: FinishGameDto) {
 
     if (finishGameDto.isCancelled) {
-      return await this.gameModel.deleteOne({ id: id }).exec();
+      return this.gameModel.deleteOne({ id: id }).exec();
     } else {
 
       const game = await this.gameModel.findOne({id: id}).exec();
       if (!game) {
         throw new NotFoundException('This game is already finished or has never existed.');
       }
+      if (game.firstTeam.length === 0 || game.secondTeam.length === 0) {
+        throw new NotAcceptableException('Both teams must have at least one player.');
+      }
 
       const fetchPlayer = async (playerId: string) => {
-        return this.playerModel.findOne({_id: playerId}).exec();
+        const player = await this.playerModel.findOne({_id: playerId}).exec();
+        if (!player) {
+          throw new NotFoundException(`Player with id ${playerId} not found.`);
+        }
+        return player;
       };
 
-      const [
-        firstTeamFirstPlayer,
-        firstTeamSecondPlayer,
-        secondTeamFirstPlayer,
-        secondTeamSecondPlayer
-      ] = await Promise.all([
-        fetchPlayer(game.firstTeam[0]),
-        fetchPlayer(game.firstTeam[1]),
-        fetchPlayer(game.secondTeam[0]),
-        fetchPlayer(game.secondTeam[1]),
-      ]);
+      const firstTeamPlayers = await Promise.all(game.firstTeam.map(fetchPlayer));
+      const secondTeamPlayers = await Promise.all(game.secondTeam.map(fetchPlayer));
 
-      const firstTeamAverageElo = (firstTeamFirstPlayer.elo + firstTeamSecondPlayer.elo) / 2;
-      const secondTeamAverageElo = (secondTeamFirstPlayer.elo + secondTeamSecondPlayer.elo) / 2;
+      const firstTeamAverageElo = firstTeamPlayers.reduce((sum, player) => sum + player.elo, 0) / firstTeamPlayers.length;
+      const secondTeamAverageElo = secondTeamPlayers.reduce((sum, player) => sum + player.elo, 0) / secondTeamPlayers.length;
 
       await Promise.all([
-        this.updatePlayerStats(firstTeamFirstPlayer, finishGameDto.firstTeamScore, secondTeamAverageElo, firstTeamAverageElo),
-        this.updatePlayerStats(firstTeamSecondPlayer, finishGameDto.firstTeamScore, secondTeamAverageElo, firstTeamAverageElo),
-        this.updatePlayerStats(secondTeamFirstPlayer, finishGameDto.secondTeamScore, firstTeamAverageElo, secondTeamAverageElo),
-        this.updatePlayerStats(secondTeamSecondPlayer, finishGameDto.secondTeamScore, firstTeamAverageElo, secondTeamAverageElo),
+        ...firstTeamPlayers.map(player => this.updatePlayerStats(player, finishGameDto.firstTeamScore, secondTeamAverageElo, firstTeamAverageElo)),
+        ...secondTeamPlayers.map(player => this.updatePlayerStats(player, finishGameDto.secondTeamScore, firstTeamAverageElo, secondTeamAverageElo)),
       ]);
 
       return this.gameModel.deleteOne({id: id}).exec();
