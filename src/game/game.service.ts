@@ -43,8 +43,8 @@ export class GameService {
     return player._id;
   }
 
-  private updatePlayerStats(player: any, teamScore: number, opponentAverageElo: number, teamAverageElo: number) {
-    player.elo = this.calculatePlayerNewElo(player.elo, teamAverageElo, teamScore == 10, opponentAverageElo, teamScore);
+  private updatePlayerStats(player: any, teamScore: number,  opponentScore: number, teamAverageElo: number, opponentAverageElo: number) {
+    player.elo = this.calculatePlayerNewElo(player.elo, teamAverageElo, teamScore == 10, opponentAverageElo, teamScore, opponentScore);
     player.games++;
     player.wins += teamScore == 10 ? 1 : 0;
     player.wlr = (player.games - player.wins) === 0 ? player.wins : player.wins / (player.games - player.wins);
@@ -80,20 +80,18 @@ export class GameService {
       const secondTeamAverageElo = secondTeamPlayers.reduce((sum, player) => sum + player.elo, 0) / secondTeamPlayers.length;
 
       await Promise.all([
-        ...firstTeamPlayers.map(player => this.updatePlayerStats(player, finishGameDto.firstTeamScore, secondTeamAverageElo, firstTeamAverageElo)),
-        ...secondTeamPlayers.map(player => this.updatePlayerStats(player, finishGameDto.secondTeamScore, firstTeamAverageElo, secondTeamAverageElo)),
+        ...firstTeamPlayers.map(player => this.updatePlayerStats(player, finishGameDto.firstTeamScore, finishGameDto.secondTeamScore, firstTeamAverageElo, secondTeamAverageElo)),
+        ...secondTeamPlayers.map(player => this.updatePlayerStats(player, finishGameDto.secondTeamScore, finishGameDto.firstTeamScore, secondTeamAverageElo, firstTeamAverageElo)),
       ]);
 
       return this.gameModel.deleteOne({id: id}).exec();
     }
   }
 
-  calculatePlayerNewElo(playerElo: number, teamAverageElo: number, didWin: boolean, opponentAverageElo: number, score: number) {
-    const MAX_ELO_WITHOUT_SCORE: number = 32;
-    const BASE_ELO: number = 1000;
+  calculatePlayerNewElo(playerElo: number, teamAverageElo: number, didWin: boolean, opponentAverageElo: number, teamScore: number, opponentScore: number) {
+    const MAX_ELO_WITHOUT_SCORE: number = 48;
     let expectedWin: number = 1 / (1 + Math.pow(10, (opponentAverageElo-teamAverageElo)/400));
-    let proportionalScore: number = opponentAverageElo / BASE_ELO * score;
-    return playerElo + MAX_ELO_WITHOUT_SCORE * (+didWin - expectedWin) + proportionalScore;
+    return playerElo + MAX_ELO_WITHOUT_SCORE * (+didWin - expectedWin) / 10 * (Math.abs(teamScore - opponentScore));
   }
 
 }
